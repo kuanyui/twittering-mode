@@ -403,6 +403,8 @@ Items:
                       squeeze a series of white spaces.
                       You can use any other specifiers in braces.
  %f - source
+ %e - retweet count.
+ %F - favorite count.
  %# - id
 ")
 
@@ -8539,9 +8541,17 @@ following symbols;
        (format-time-string "%a %b %d %H:%M:%S %z %Y"
 			   (cdr (assq 'created-at ,status-sym)))))
     ("d" . (cdr (assq 'user-description ,status-sym)))
+    ("e" . (let ((retweet-count (cdr (assq 'retweet-count ,status-sym))))
+	     (if (> retweet-count 0)
+		 (format "R%s" retweet-count)
+	       "")))
     ("f" .
      (twittering-make-string-with-source-property
       (cdr (assq 'source ,status-sym)) ,status-sym))
+    ("F" . (let ((favorite-count (cdr (assq 'favorite-count ,status-sym))))
+	     (if (> favorite-count 0)
+		 (format "F%s" favorite-count)
+	       "")))
     ("i" .
      (when (and twittering-icon-mode window-system)
        (let ((url
