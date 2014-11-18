@@ -8549,17 +8549,21 @@ following symbols;
        (format-time-string "%a %b %d %H:%M:%S %z %Y"
 			   (cdr (assq 'created-at ,status-sym)))))
     ("d" . (cdr (assq 'user-description ,status-sym)))
-    ("e" . (let ((retweet-count (cdr (assq 'retweet-count ,status-sym))))
-	     (if (> retweet-count 0)
-		 (format "%s%s" twittering-retweet-count-symbol retweet-count)
-	       "")))
+    ("e" .
+     (let ((retweet-count (cdr (assq 'retweet-count ,status-sym))))
+       (if (and (numberp retweet-count)
+		(> retweet-count 0))
+	   (format "%s%s" twittering-retweet-count-symbol retweet-count)
+	 "")))
     ("f" .
      (twittering-make-string-with-source-property
       (cdr (assq 'source ,status-sym)) ,status-sym))
-    ("F" . (let ((favorite-count (cdr (assq 'favorite-count ,status-sym))))
-	     (if (> favorite-count 0)
-		 (format "%s%s" twittering-favorite-count-symbol favorite-count)
-	       "")))
+    ("F" .
+     (let ((favorite-count (cdr (assq 'favorite-count ,status-sym))))
+       (if (and (numberp favorite-count)
+		(> favorite-count 0))
+	   (format "%s%s" twittering-favorite-count-symbol favorite-count)
+	 "")))
     ("i" .
      (when (and twittering-icon-mode window-system)
        (let ((url
