@@ -9005,25 +9005,26 @@ following symbols;
                             (twittering-valid-tweet-url expanded-url)))
                        (replacement
                         (if retweeted-link-id
-                            (twittering-format-retweeted
-                             (progn
-                               (if (twittering-find-status retweeted-link-id)
-                                   ;; If the status has already retrieved, do nothing.
-                                   nil
-                                 (twittering-call-api
-                                  'retrieve-single-tweet
-                                  `((id . ,retweeted-link-id))))
-                               (twittering-find-status retweeted-link-id)))
-                          (propertize
-                           expanded-url
-                           'mouse-face 'highlight
-                           'keymap twittering-mode-on-uri-map
-                           'uri url
-                           'uri-origin 'explicit-uri-in-tweet
-                           'expanded-uri expanded-url
-                           'face 'twittering-uri-face
-                           'front-sticky nil
-                           'rear-nonsticky t))))
+			    (progn
+			      (if (twittering-find-status retweeted-link-id)
+				  ;; If the status has already retrieved, do nothing.
+				  nil
+				(twittering-call-api
+				 'retrieve-single-tweet
+				 `((id . ,retweeted-link-id))))
+			      (propertize "(Retriving retweet...)"
+					  'twittering-retrieving retweeted-link-id)
+			      )
+			  (propertize
+			   expanded-url
+			   'mouse-face 'highlight
+			   'keymap twittering-mode-on-uri-map
+			   'uri url
+			   'uri-origin 'explicit-uri-in-tweet
+			   'expanded-uri expanded-url
+			   'face 'twittering-uri-face
+			   'front-sticky nil
+			   'rear-nonsticky t))))
 		  (setq text
 			(concat
 			 (substring text 0 (min (+ offset start) text-length))
