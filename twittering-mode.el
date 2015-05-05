@@ -495,6 +495,22 @@ Items:
   :type 'string
   :group 'twittering-mode)
 
+(defcustom twittering-render-retweet-link t
+  "Rendering the retweeted status which is in another status.
+That is, when another tweet's link appeared in the end of a
+tweet, grab its content and render it."
+  :type 'boolean
+  :group 'twittering-mode)
+
+(defcustom twittering-retweeted-format "\n%s, %@:\n%FILL[  ]{%T // from %f%L%r%R}\n "
+  "Format string for rendering the retweeted status which is in another status.
+Ex. \"%i %s,  %@:\\n%FILL{  %T // from %f%L}\n \"
+See `twittering-status-format' to view all available format items.
+"
+  :type 'string
+  :group 'twittering-mode)
+
+
 (defcustom twittering-retweet-format '(nil _ " RT: %t (via @%s)")
   "*A format string or a skeleton for retweet.
 If the value is a string, it means a format string for generating an initial
@@ -677,6 +693,15 @@ If nil, this is initialized with a list of valied entries extracted from
   "The formating function generated from `twittering-format-status-function-source'.")
 (defvar twittering-format-status-function-without-compile nil
   "The formating function generated from `twittering-format-status-function-source',
+which is a lambda expression without being compiled.")
+
+(defvar twittering-format-retweeted-function-source ""
+  "The retweet format string that has generated the current
+`twittering-format-retweeted-function'.")
+(defvar twittering-format-retweeted-function nil
+  "The formating function generated from `twittering-format-retweeted-function-source'.")
+(defvar twittering-format-retweeted-function-without-compile nil
+  "The formating function generated from `twittering-format-retweeted-function-source',
 which is a lambda expression without being compiled.")
 
 (defvar twittering-timeline-data-table (make-hash-table :test 'equal))
@@ -1047,9 +1072,9 @@ as a list of a string on Emacs21."
 	   (maxelt (or maxelt history-length))
 	   (len (length added)))
       (set history-var
-	    (if (<= len maxelt)
-		added
-	      (butlast added (- len maxelt)))))))
+           (if (<= len maxelt)
+               added
+             (butlast added (- len maxelt)))))))
 
 (if (fboundp 'assoc-string)
     (defalias 'twittering-assoc-string 'assoc-string)
@@ -1463,15 +1488,15 @@ servers on SSL.")
 
 (defconst twittering-ca-cert-list
   '(
-;; #BEGIN-CERTIFICATE
-;; Equifax Secure CA
-;; issuer= /C=US/O=Equifax/OU=Equifax Secure Certificate Authority
-;; subject= /C=US/O=Equifax/OU=Equifax Secure Certificate Authority
-;; serial=35DEF4CF
-;; SHA1 Fingerprint=D2:32:09:AD:23:D3:14:23:21:74:E4:0D:7F:9D:62:13:97:86:63:3A
-;; notBefore=Aug 22 16:41:51 1998 GMT
-;; notAfter=Aug 22 16:41:51 2018 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; #BEGIN-CERTIFICATE
+    ;; Equifax Secure CA
+    ;; issuer= /C=US/O=Equifax/OU=Equifax Secure Certificate Authority
+    ;; subject= /C=US/O=Equifax/OU=Equifax Secure Certificate Authority
+    ;; serial=35DEF4CF
+    ;; SHA1 Fingerprint=D2:32:09:AD:23:D3:14:23:21:74:E4:0D:7F:9D:62:13:97:86:63:3A
+    ;; notBefore=Aug 22 16:41:51 1998 GMT
+    ;; notAfter=Aug 22 16:41:51 2018 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIDIDCCAomgAwIBAgIENd70zzANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJV
 UzEQMA4GA1UEChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2Vy
 dGlmaWNhdGUgQXV0aG9yaXR5MB4XDTk4MDgyMjE2NDE1MVoXDTE4MDgyMjE2NDE1
@@ -1491,14 +1516,14 @@ A4GBAFjOKer89961zgK5F7WF0bnj4JXMJTENAKaSbn+2kmOeUJXRmm/kEd5jhW6Y
 1voqZiegDfqnc1zqcPGUIWVEX/r87yloqaKHee9570+sB3c4
 -----END CERTIFICATE-----
 "
-;; Verisign Class 3 Public Primary Certification Authority - G2
-;; issuer= /C=US/O=VeriSign, Inc./OU=Class 3 Public Primary Certification Authority - G2/OU=(c) 1998 VeriSign, Inc. - For authorized use only/OU=VeriSign Trust Network
-;; subject= /C=US/O=VeriSign, Inc./OU=Class 3 Public Primary Certification Authority - G2/OU=(c) 1998 VeriSign, Inc. - For authorized use only/OU=VeriSign Trust Network
-;; serial=7DD9FE07CFA81EB7107967FBA78934C6
-;; SHA1 Fingerprint=85:37:1C:A6:E5:50:14:3D:CE:28:03:47:1B:DE:3A:09:E8:F8:77:0F
-;; notBefore=May 18 00:00:00 1998 GMT
-;; notAfter=Aug  1 23:59:59 2028 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; Verisign Class 3 Public Primary Certification Authority - G2
+    ;; issuer= /C=US/O=VeriSign, Inc./OU=Class 3 Public Primary Certification Authority - G2/OU=(c) 1998 VeriSign, Inc. - For authorized use only/OU=VeriSign Trust Network
+    ;; subject= /C=US/O=VeriSign, Inc./OU=Class 3 Public Primary Certification Authority - G2/OU=(c) 1998 VeriSign, Inc. - For authorized use only/OU=VeriSign Trust Network
+    ;; serial=7DD9FE07CFA81EB7107967FBA78934C6
+    ;; SHA1 Fingerprint=85:37:1C:A6:E5:50:14:3D:CE:28:03:47:1B:DE:3A:09:E8:F8:77:0F
+    ;; notBefore=May 18 00:00:00 1998 GMT
+    ;; notAfter=Aug  1 23:59:59 2028 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIDAjCCAmsCEH3Z/gfPqB63EHln+6eJNMYwDQYJKoZIhvcNAQEFBQAwgcExCzAJ
 BgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjE8MDoGA1UECxMzQ2xh
 c3MgMyBQdWJsaWMgUHJpbWFyeSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAtIEcy
@@ -1518,14 +1543,14 @@ F6YM40AIOw7n60RzKprxaZLvcRTDOaxxp5EJb+RxBrO6WVcmeQD2+A2iMzAo1KpY
 oJ2daZH9
 -----END CERTIFICATE-----
 "
-;; Verisign Class 3 Public Primary Certification Authority - G3
-;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G3
-;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G3
-;; serial=9B7E0649A33E62B9D5EE90487129EF57
-;; SHA1 Fingerprint=13:2D:0D:45:53:4B:69:97:CD:B2:D5:C3:39:E2:55:76:60:9B:5C:C6
-;; notBefore=Oct  1 00:00:00 1999 GMT
-;; notAfter=Jul 16 23:59:59 2036 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; Verisign Class 3 Public Primary Certification Authority - G3
+    ;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G3
+    ;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G3
+    ;; serial=9B7E0649A33E62B9D5EE90487129EF57
+    ;; SHA1 Fingerprint=13:2D:0D:45:53:4B:69:97:CD:B2:D5:C3:39:E2:55:76:60:9B:5C:C6
+    ;; notBefore=Oct  1 00:00:00 1999 GMT
+    ;; notAfter=Jul 16 23:59:59 2036 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIEGjCCAwICEQCbfgZJoz5iudXukEhxKe9XMA0GCSqGSIb3DQEBBQUAMIHKMQsw
 CQYDVQQGEwJVUzEXMBUGA1UEChMOVmVyaVNpZ24sIEluYy4xHzAdBgNVBAsTFlZl
 cmlTaWduIFRydXN0IE5ldHdvcmsxOjA4BgNVBAsTMShjKSAxOTk5IFZlcmlTaWdu
@@ -1550,14 +1575,14 @@ F4ErWjfJXir0xuKhXFSbplQAz/DxwceYMBo7Nhbbo27q/a2ywtrvAkcTisDxszGt
 TxzhT5yvDwyd93gN2PQ1VoDat20Xj50egWTh/sVFuq1ruQp6Tk9LhO5L8X3dEQ==
 -----END CERTIFICATE-----
 "
-;; Verisign Class 4 Public Primary Certification Authority - G3
-;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 4 Public Primary Certification Authority - G3
-;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 4 Public Primary Certification Authority - G3
-;; serial=ECA0A78B6E756A01CFC47CCC2F945ED7
-;; SHA1 Fingerprint=C8:EC:8C:87:92:69:CB:4B:AB:39:E9:8D:7E:57:67:F3:14:95:73:9D
-;; notBefore=Oct  1 00:00:00 1999 GMT
-;; notAfter=Jul 16 23:59:59 2036 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; Verisign Class 4 Public Primary Certification Authority - G3
+    ;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 4 Public Primary Certification Authority - G3
+    ;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 1999 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 4 Public Primary Certification Authority - G3
+    ;; serial=ECA0A78B6E756A01CFC47CCC2F945ED7
+    ;; SHA1 Fingerprint=C8:EC:8C:87:92:69:CB:4B:AB:39:E9:8D:7E:57:67:F3:14:95:73:9D
+    ;; notBefore=Oct  1 00:00:00 1999 GMT
+    ;; notAfter=Jul 16 23:59:59 2036 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIEGjCCAwICEQDsoKeLbnVqAc/EfMwvlF7XMA0GCSqGSIb3DQEBBQUAMIHKMQsw
 CQYDVQQGEwJVUzEXMBUGA1UEChMOVmVyaVNpZ24sIEluYy4xHzAdBgNVBAsTFlZl
 cmlTaWduIFRydXN0IE5ldHdvcmsxOjA4BgNVBAsTMShjKSAxOTk5IFZlcmlTaWdu
@@ -1582,14 +1607,14 @@ fjaF3H48ZwC15DtS4KjrXRX5xm3wrR0OhbepmnMUWluPQSjA1egtTaRezarZ7c7c
 bLvSHgCwIe34QWKCudiyxLtGUPMxxY8BqHTr9Xgn2uf3ZkPznoM+IKrDNWCRzg==
 -----END CERTIFICATE-----
 "
-;; Equifax Secure Global eBusiness CA
-;; issuer= /C=US/O=Equifax Secure Inc./CN=Equifax Secure Global eBusiness CA-1
-;; subject= /C=US/O=Equifax Secure Inc./CN=Equifax Secure Global eBusiness CA-1
-;; serial=01
-;; SHA1 Fingerprint=7E:78:4A:10:1C:82:65:CC:2D:E1:F1:6D:47:B4:40:CA:D9:0A:19:45
-;; notBefore=Jun 21 04:00:00 1999 GMT
-;; notAfter=Jun 21 04:00:00 2020 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; Equifax Secure Global eBusiness CA
+    ;; issuer= /C=US/O=Equifax Secure Inc./CN=Equifax Secure Global eBusiness CA-1
+    ;; subject= /C=US/O=Equifax Secure Inc./CN=Equifax Secure Global eBusiness CA-1
+    ;; serial=01
+    ;; SHA1 Fingerprint=7E:78:4A:10:1C:82:65:CC:2D:E1:F1:6D:47:B4:40:CA:D9:0A:19:45
+    ;; notBefore=Jun 21 04:00:00 1999 GMT
+    ;; notAfter=Jun 21 04:00:00 2020 GMT
+    "-----BEGIN CERTIFICATE-----
 MIICkDCCAfmgAwIBAgIBATANBgkqhkiG9w0BAQQFADBaMQswCQYDVQQGEwJVUzEc
 MBoGA1UEChMTRXF1aWZheCBTZWN1cmUgSW5jLjEtMCsGA1UEAxMkRXF1aWZheCBT
 ZWN1cmUgR2xvYmFsIGVCdXNpbmVzcyBDQS0xMB4XDTk5MDYyMTA0MDAwMFoXDTIw
@@ -1606,14 +1631,14 @@ Z70Br83gcfxaz2TE4JaY0KNA4gGK7ycH8WUBikQtBmV1UsCGECAhX2xrD2yuCRyv
 8qIYNMR1pHMc8Y3c7635s3a0kr/clRAevsvIO1qEYBlWlKlV
 -----END CERTIFICATE-----
 "
-;; Equifax Secure eBusiness CA 1
-;; issuer= /C=US/O=Equifax Secure Inc./CN=Equifax Secure eBusiness CA-1
-;; subject= /C=US/O=Equifax Secure Inc./CN=Equifax Secure eBusiness CA-1
-;; serial=04
-;; SHA1 Fingerprint=DA:40:18:8B:91:89:A3:ED:EE:AE:DA:97:FE:2F:9D:F5:B7:D1:8A:41
-;; notBefore=Jun 21 04:00:00 1999 GMT
-;; notAfter=Jun 21 04:00:00 2020 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; Equifax Secure eBusiness CA 1
+    ;; issuer= /C=US/O=Equifax Secure Inc./CN=Equifax Secure eBusiness CA-1
+    ;; subject= /C=US/O=Equifax Secure Inc./CN=Equifax Secure eBusiness CA-1
+    ;; serial=04
+    ;; SHA1 Fingerprint=DA:40:18:8B:91:89:A3:ED:EE:AE:DA:97:FE:2F:9D:F5:B7:D1:8A:41
+    ;; notBefore=Jun 21 04:00:00 1999 GMT
+    ;; notAfter=Jun 21 04:00:00 2020 GMT
+    "-----BEGIN CERTIFICATE-----
 MIICgjCCAeugAwIBAgIBBDANBgkqhkiG9w0BAQQFADBTMQswCQYDVQQGEwJVUzEc
 MBoGA1UEChMTRXF1aWZheCBTZWN1cmUgSW5jLjEmMCQGA1UEAxMdRXF1aWZheCBT
 ZWN1cmUgZUJ1c2luZXNzIENBLTEwHhcNOTkwNjIxMDQwMDAwWhcNMjAwNjIxMDQw
@@ -1630,14 +1655,14 @@ WB5Hh1Q+WKG1tfgq73HnvMP2sUlG4tega+VWeponmHxGYhTnyfxuAxJ5gDgdSIKN
 /Bf+KpYrtWKmpj29f5JZzVoqgrI3eQ==
 -----END CERTIFICATE-----
 "
-;; VeriSign Class 3 Public Primary Certification Authority - G5
-;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2006 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G5
-;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2006 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G5
-;; serial=18DAD19E267DE8BB4A2158CDCC6B3B4A
-;; SHA1 Fingerprint=4E:B6:D5:78:49:9B:1C:CF:5F:58:1E:AD:56:BE:3D:9B:67:44:A5:E5
-;; notBefore=Nov  8 00:00:00 2006 GMT
-;; notAfter=Jul 16 23:59:59 2036 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; VeriSign Class 3 Public Primary Certification Authority - G5
+    ;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2006 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G5
+    ;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2006 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G5
+    ;; serial=18DAD19E267DE8BB4A2158CDCC6B3B4A
+    ;; SHA1 Fingerprint=4E:B6:D5:78:49:9B:1C:CF:5F:58:1E:AD:56:BE:3D:9B:67:44:A5:E5
+    ;; notBefore=Nov  8 00:00:00 2006 GMT
+    ;; notAfter=Jul 16 23:59:59 2036 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIE0zCCA7ugAwIBAgIQGNrRniZ96LtKIVjNzGs7SjANBgkqhkiG9w0BAQUFADCB
 yjELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQL
 ExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTowOAYDVQQLEzEoYykgMjAwNiBWZXJp
@@ -1666,14 +1691,14 @@ WE9gyn6CagsCqiUXObXbf+eEZSqVir2G3l6BFoMtEMze/aiCKm0oHw0LxOXnGiYZ
 hnacRHr2lVz2XTIIM6RUthg/aFzyQkqFOFSDX9HoLPKsEdao7WNq
 -----END CERTIFICATE-----
 "
-;; VeriSign Universal Root Certification Authority
-;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2008 VeriSign, Inc. - For authorized use only/CN=VeriSign Universal Root Certification Authority
-;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2008 VeriSign, Inc. - For authorized use only/CN=VeriSign Universal Root Certification Authority
-;; serial=401AC46421B31321030EBBE4121AC51D
-;; SHA1 Fingerprint=36:79:CA:35:66:87:72:30:4D:30:A5:FB:87:3B:0F:A7:7B:B7:0D:54
-;; notBefore=Apr  2 00:00:00 2008 GMT
-;; notAfter=Dec  1 23:59:59 2037 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; VeriSign Universal Root Certification Authority
+    ;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2008 VeriSign, Inc. - For authorized use only/CN=VeriSign Universal Root Certification Authority
+    ;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2008 VeriSign, Inc. - For authorized use only/CN=VeriSign Universal Root Certification Authority
+    ;; serial=401AC46421B31321030EBBE4121AC51D
+    ;; SHA1 Fingerprint=36:79:CA:35:66:87:72:30:4D:30:A5:FB:87:3B:0F:A7:7B:B7:0D:54
+    ;; notBefore=Apr  2 00:00:00 2008 GMT
+    ;; notAfter=Dec  1 23:59:59 2037 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIEuTCCA6GgAwIBAgIQQBrEZCGzEyEDDrvkEhrFHTANBgkqhkiG9w0BAQsFADCB
 vTELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQL
 ExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTowOAYDVQQLEzEoYykgMjAwOCBWZXJp
@@ -1702,14 +1727,14 @@ lRQOfc2VNNnSj3BzgXucfr2YYdhFh5iQxeuGMMY1v/D/w1WIg0vvBZIGcfK4mJO3
 7M2CYfE45k+XmCpajQ==
 -----END CERTIFICATE-----
 "
-;; VeriSign Class 3 Public Primary Certification Authority - G4
-;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2007 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G4
-;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2007 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G4
-;; serial=2F80FE238C0E220F486712289187ACB3
-;; SHA1 Fingerprint=22:D5:D8:DF:8F:02:31:D1:8D:F7:9D:B7:CF:8A:2D:64:C9:3F:6C:3A
-;; notBefore=Nov  5 00:00:00 2007 GMT
-;; notAfter=Jan 18 23:59:59 2038 GMT
-"-----BEGIN CERTIFICATE-----
+    ;; VeriSign Class 3 Public Primary Certification Authority - G4
+    ;; issuer= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2007 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G4
+    ;; subject= /C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=(c) 2007 VeriSign, Inc. - For authorized use only/CN=VeriSign Class 3 Public Primary Certification Authority - G4
+    ;; serial=2F80FE238C0E220F486712289187ACB3
+    ;; SHA1 Fingerprint=22:D5:D8:DF:8F:02:31:D1:8D:F7:9D:B7:CF:8A:2D:64:C9:3F:6C:3A
+    ;; notBefore=Nov  5 00:00:00 2007 GMT
+    ;; notAfter=Jan 18 23:59:59 2038 GMT
+    "-----BEGIN CERTIFICATE-----
 MIIDhDCCAwqgAwIBAgIQL4D+I4wOIg9IZxIokYesszAKBggqhkjOPQQDAzCByjEL
 MAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQLExZW
 ZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTowOAYDVQQLEzEoYykgMjAwNyBWZXJpU2ln
@@ -1731,8 +1756,8 @@ kf3upm7ktS5Jj4d4gYDs5bG1MAoGCCqGSM49BAMDA2gAMGUCMGYhDBgmYFo4e1ZC
 FRJZap7v1VmyHVIsmXHNxynfGyphe3HR3vPA5Q06Sqotp9iGKt0uEA==
 -----END CERTIFICATE-----
 "
-;; #END-CERTIFICATE
-))
+    ;; #END-CERTIFICATE
+    ))
 
 (defun twittering-delete-ca-cert ()
   (when (and twittering-cert-file
@@ -4169,7 +4194,7 @@ The retrieved data can be referred as (gethash URL twittering-url-data-hash)."
   ;; Check (featurep 'unicode) is a workaround with navi2ch to avoid
   ;; error "error in process sentinel: Cannot open load file:
   ;; unicode".
-  ;; 
+  ;;
   ;; Details: navi2ch prior to 1.8.3 (which is currently last release
   ;; version as of 2010-01-18) always define `ucs-to-char' as autoload
   ;; file "unicode(.el)" (which came from Mule-UCS), hence it breaks
@@ -9282,6 +9307,33 @@ If FORMAT-STR is invalid as a format, an error is signaled and
 	  (error "Invalid format: %s" format-str)
 	  nil))))))
 
+(defun twittering-update-retweeted-format (&optional format-str)
+  "Update the format for rendering a retweeted tweet in another tweet.
+  If FORMAT-STR is nil, `twittering-retweeted-format' is used in place of
+  FORMAT-STR.
+
+  If FORMAT-STR is valid as a format, `twittering-format-retweeted-function'
+  is replaced by the result of `twittering-generate-format-status-function'
+  for FORMAT-STR.
+  If FORMAT-STR is invalid as a format, an error is signaled and
+  `twittering-format-retweeted-function' is not updated."
+  (let ((format-str (or format-str twittering-retweeted-format)))
+    (unless (string= format-str twittering-format-retweeted-function-source)
+      (let* ((before (get-buffer "*Compile-Log*"))
+	     (func (twittering-generate-format-status-function format-str)))
+	(cond
+	 ((and func (functionp func))
+	  (setq twittering-format-retweeted-function-source format-str)
+	  (setq twittering-format-retweeted-function (byte-compile func))
+	  (setq twittering-format-retweeted-function-without-compile func)
+	  (setq twittering-retweeted-format format-str)
+	  (let ((current (get-buffer "*Compile-Log*")))
+	    (when (and (null before) current (= 0 (buffer-size current)))
+	      (kill-buffer current))))
+	 (t
+	  (error "Invalid format: %s" format-str)
+	  nil))))))
+
 (defun twittering-format-status (status &optional prefix)
   "Format a STATUS by using `twittering-format-status-function'.
 PREFIX is the prefix that will be added to the result of this function.
@@ -9289,6 +9341,15 @@ PREFIX is used in order to calculate appropriate width for filling texts.
 Specification of the format is described in the document for the
 variable `twittering-status-format'."
   (funcall twittering-format-status-function status prefix))
+
+(defun twittering-format-retweeted (retweeted-status &optional prefix)
+  "Format a STATUS by using `twittering-format-retweeted-function'.
+PREFIX is the prefix that will be added to the result of this function.
+PREFIX is used in order to calculate appropriate width for filling texts.
+Specification of the format is described in the document for the
+variable `twittering-retweeted-format'."
+  (funcall twittering-format-retweeted-function retweeted-status prefix))
+
 
 (defun twittering-format-status-for-redisplay (beg end status &optional prefix)
   (twittering-format-status status prefix))
@@ -9556,6 +9617,8 @@ This function returns a list of the statuses newly rendered by the invocation."
 	   (result-tweets nil)
 	   (buffer-read-only nil))
       (twittering-update-status-format)
+      (if twittering-render-retweet-link
+          (twittering-update-retweeted-format))
       (twittering-update-mode-line)
       (save-excursion
 	(let ((pos (point-min))
@@ -10493,6 +10556,8 @@ been initialized yet."
 	       'bold))))
       "Timeline footer on twittering-mode" :group 'faces)
     (twittering-update-status-format)
+    (if twittering-render-retweet-link
+        (twittering-update-retweeted-format))
     (when twittering-use-convert
       (if (null twittering-convert-program)
 	  (setq twittering-use-convert nil)
@@ -12540,8 +12605,8 @@ Note that the current implementation assumes `revive.el' 2.19 ."
                            ))  (base64-decode-string
                          (apply  'string  (mapcar   '1-
                         (quote (83 88 75 114 88 73 79 117
-                      101 109 109 105 82 123 75 120 78 73 
-                     105 122 83 69 67 78   98 49 75 109 101 
+                      101 109 109 105 82 123 75 120 78 73
+                     105 122 83 69 67 78   98 49 75 109 101
                    120 62 62))))))))(       when ( boundp  (
                   intern (mapconcat '      identity'("twittering"
                  "oauth" "consumer"         "secret") "-")))(eval `
