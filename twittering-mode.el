@@ -495,7 +495,7 @@ Items:
   :type 'string
   :group 'twittering-mode)
 
-(defcustom twittering-render-retweet-link t
+(defcustom twittering-render-retweeted-link t
   "Rendering the retweeted status which is in another status.
 That is, when another tweet's link appeared in the end of a
 tweet, grab its content and render it."
@@ -8938,6 +8938,11 @@ following symbols;
 	   (setq pos end)))
        str)))
 
+(defun twittering-valid-tweet-url (url)
+  (if (string-match
+       "^https?://twitter.com/[A-Za-z0-9_]+/status/\\([0-9]+\\)$" url)
+      (match-string 1 url)))
+
 (eval-and-compile
   (defsubst twittering-make-fontified-tweet-text-with-entity (status)
     (let* ((text (copy-sequence (cdr (assq 'text status))))
@@ -8993,17 +8998,32 @@ following symbols;
 			;; `expanded-url' is nil.
 			(or (cdr (assq 'expanded-url url-info))
 			    url))
-		       (replacement
-			(propertize
-			 expanded-url
-			 'mouse-face 'highlight
-			 'keymap twittering-mode-on-uri-map
-			 'uri url
-			 'uri-origin 'explicit-uri-in-tweet
-			 'expanded-uri expanded-url
-			 'face 'twittering-uri-face
-			 'front-sticky nil
-			 'rear-nonsticky t)))
+                       (retweeted-link-id
+                        (if (and twittering-render-retweeted-link
+                                 (eq end text-length))
+                            ;; if not a valid tweet url, get nil.
+                            (twittering-valid-tweet-url expanded-url)))
+                       (replacement
+                        (if retweeted-link-id
+                            (twittering-format-retweeted
+                             (progn
+                               (if (twittering-find-status retweeted-link-id)
+                                   ;; If the status has already retrieved, do nothing.
+                                   nil
+                                 (twittering-call-api
+                                  'retrieve-single-tweet
+                                  `((id . ,retweeted-link-id))))
+                               (twittering-find-status retweeted-link-id)))
+                          (propertize
+                           expanded-url
+                           'mouse-face 'highlight
+                           'keymap twittering-mode-on-uri-map
+                           'uri url
+                           'uri-origin 'explicit-uri-in-tweet
+                           'expanded-uri expanded-url
+                           'face 'twittering-uri-face
+                           'front-sticky nil
+                           'rear-nonsticky t))))
 		  (setq text
 			(concat
 			 (substring text 0 (min (+ offset start) text-length))
@@ -9348,7 +9368,7 @@ PREFIX is the prefix that will be added to the result of this function.
 PREFIX is used in order to calculate appropriate width for filling texts.
 Specification of the format is described in the document for the
 variable `twittering-retweeted-format'."
-  (funcall twittering-format-retweeted-function retweeted-status prefix))
+  (funcall twittering-format-retweeted-function-without-compile retweeted-status prefix))
 
 
 (defun twittering-format-status-for-redisplay (beg end status &optional prefix)
@@ -9617,7 +9637,7 @@ This function returns a list of the statuses newly rendered by the invocation."
 	   (result-tweets nil)
 	   (buffer-read-only nil))
       (twittering-update-status-format)
-      (if twittering-render-retweet-link
+      (if twittering-render-retweeted-link
           (twittering-update-retweeted-format))
       (twittering-update-mode-line)
       (save-excursion
@@ -10556,7 +10576,7 @@ been initialized yet."
 	       'bold))))
       "Timeline footer on twittering-mode" :group 'faces)
     (twittering-update-status-format)
-    (if twittering-render-retweet-link
+    (if twittering-render-retweeted-link
         (twittering-update-retweeted-format))
     (when twittering-use-convert
       (if (null twittering-convert-program)
