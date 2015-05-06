@@ -9010,13 +9010,20 @@ following symbols;
 				(twittering-fill-string
 				 (twittering-format-retweeted
 				  (twittering-find-status retweeted-link-id)) 2)
-			      (progn
+			      (let* ((symbol-for-redisplay 'waiting-for-retweeted-retrieval)
+				     (prefix "    ")
+				     (label "[RETRIEVING...]")
+				     (properties
+				      `(,symbol-for-redisplay
+					(twittering-render-a-status-with-delay ,retweeted-link-id ,prefix 'retweeted))))
 				(twittering-call-api
 				 'retrieve-single-tweet
-				 `((id . ,retweeted-link-id)))
-				(propertize "(Retriving retweet...)"
-					    'twittering-retrieving retweeted-link-id))
-			      )
+				 `((id . ,retweeted-link-id))
+				 `((buffer . ,(current-buffer))
+				   (property-to-be-redisplayed . ,symbol-for-redisplay)))
+				(concat
+				 "\n"
+				 (apply 'propertize (concat prefix label) properties))))
 			  (propertize
 			   expanded-url
 			   'mouse-face 'highlight
@@ -10071,14 +10078,17 @@ Return nil if no statuses are rendered."
      (t
       nil))))
 
-(defun twittering-render-a-status-with-delay (beg end id prefix)
+(defun twittering-render-a-status-with-delay (beg end id prefix &optional status-type)
   "Render a status with a delay.
 It is assumed that this function is used as a property value that is
 processed by the function `twittering-redisplay-status-on-each-buffer'."
   (let ((status (twittering-find-status id)))
     (when status
       (let ((properties (and beg (text-properties-at beg))))
-	(apply 'propertize (twittering-format-status status prefix)
+	(apply 'propertize
+	       (if (eq status-type 'retweeted)
+		   (twittering-format-retweeted status prefix)
+		 (twittering-format-status status prefix))
 	       properties)))))
 
 (defun twittering-toggle-or-retrieve-replied-statuses ()
