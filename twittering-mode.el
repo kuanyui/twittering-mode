@@ -502,7 +502,7 @@ tweet, grab its content and render it."
   :type 'boolean
   :group 'twittering-mode)
 
-(defcustom twittering-retweeted-format "\n%s, %@:\n%FILL[  ]{%T}\n "
+(defcustom twittering-retweeted-format "\n%s, %@:\n%FOLD[   ]{%T}\n "
   "Format string for rendering the retweeted status which is in another status.
 Ex. \"%i %s,  %@:\\n%FILL{  %T // from %f%L}\n \"
 See `twittering-status-format' to view all available format items.
@@ -9009,8 +9009,7 @@ following symbols;
 				;; If the status has already retrieved:
 				(twittering-fill-string
 				 (twittering-format-retweeted
-				  (twittering-find-status retweeted-link-id))
-				 2)
+				  (twittering-find-status retweeted-link-id)) 2)
 			      (progn
 				(twittering-call-api
 				 'retrieve-single-tweet
